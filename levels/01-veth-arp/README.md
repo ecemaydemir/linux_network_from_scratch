@@ -13,7 +13,7 @@
 - **Network namespace:** Kendi arayüzleri, IP adresleri, ARP ve routing tablosu olan yalıtılmış bir ağ ortamı. Burada her biri ayrı bir "bilgisayar" gibi davranıyor.
 - **veth çifti:** İki ucu olan sanal bir kablo. Bir uçtan giren paket diğer uçtan çıkıyor.
 
-MAC adresleri her kurulumda rastgele üretilir; yukarıdakiler benim çalıştırmamdaki değerler.
+Bu MAC adresleri rastgele değil: Ubuntu'da systemd, sanal arayüzlerin MAC'ini arayüz adından ve makinenin kimliğinden türetiyor. Bu yüzden aynı makinede aynı isimle kurulan arayüz hep aynı MAC'i alıyor (bkz. Seviye 2, Gözlem 1).
 
 ## Kurulum
 
