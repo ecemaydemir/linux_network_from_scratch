@@ -15,7 +15,7 @@ Amaç, CCNA çalışırken öğrendiğim kavramların (ARP, switching, VLAN, def
 |---|------|----------------|-------|
 | 1 | [İki namespace, bir veth kablosu](levels/01-veth-arp/) | Aynı subnet, ARP | ✅ |
 | 2 | [Linux bridge ile switch](levels/02-bridge-switch/) | MAC öğrenme, flooding, switching | ✅ |
-| 3 | İki subnet ve router namespace | Default gateway, inter-VLAN routing | ⏳ |
+| 3 | [İki subnet ve router namespace](levels/03-router/) | Routing tablosu, default gateway, `ip routing`, TTL | ✅ |
 | 4 | İnternete çıkış | NAT / PAT | ⏳ |
 | 5 | Firewall ve port yönlendirme | ACL, static NAT | ⏳ |
 | 6 | Tüm topolojiyi script'e dökmek | Tekrarlanabilir altyapı | ⏳ |
