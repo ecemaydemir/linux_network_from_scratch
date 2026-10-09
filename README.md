@@ -7,7 +7,7 @@ Amaç, CCNA çalışırken öğrendiğim kavramların (ARP, switching, VLAN, def
 ## Ortam
 
 - macOS üzerinde OrbStack ile Ubuntu (arm64) sanal makinesi
-- Araçlar: `iproute2`, `tcpdump`
+- Araçlar: `iproute2`, `tcpdump`, `iptables`, `conntrack`
 
 ## Seviyeler
 
@@ -16,7 +16,7 @@ Amaç, CCNA çalışırken öğrendiğim kavramların (ARP, switching, VLAN, def
 | 1 | [İki namespace, bir veth kablosu](levels/01-veth-arp/) | Aynı subnet, ARP | ✅ |
 | 2 | [Linux bridge ile switch](levels/02-bridge-switch/) | MAC öğrenme, flooding, switching | ✅ |
 | 3 | [İki subnet ve router namespace](levels/03-router/) | Routing tablosu, default gateway, `ip routing`, TTL | ✅ |
-| 4 | İnternete çıkış | NAT / PAT | ⏳ |
+| 4 | [İnternete çıkış](levels/04-nat/) | Private IP, NAT, PAT (overload), NAT tablosu | ✅ |
 | 5 | Firewall ve port yönlendirme | ACL, static NAT | ⏳ |
 | 6 | Tüm topolojiyi script'e dökmek | Tekrarlanabilir altyapı | ⏳ |
 | 7 | Docker ile karşılaştırma | — | ⏳ |
