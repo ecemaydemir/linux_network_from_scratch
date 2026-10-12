@@ -2,6 +2,7 @@
 # Seviye 7: VLAN, trunk ve router-on-a-stick.
 #   sudo ./setup.sh           -> iki switch, 6 bilgisayar, VLAN 10/20, trunk. Herkes 10.0.0.0/24'te.
 #   sudo ./setup.sh --router  -> ayrıca her VLAN'a ayrı subnet ve router-on-a-stick (r1).
+#   sudo ./setup.sh --svi     -> her VLAN'a ayrı subnet; routing'i switch'in kendisi (sw1) yapar.
 set -euo pipefail
 
 noipv6() { sysctl -qw "net.ipv6.conf.$1.disable_ipv6=1"; }
@@ -41,7 +42,7 @@ for p in sw1-trunk sw2-trunk; do
   ip link set "$p" up
 done
 
-if [[ "${1:-}" == "--router" ]]; then
+if [[ "${1:-}" == "--router" || "${1:-}" == "--svi" ]]; then
   # Her VLAN'a ayrı subnet: VLAN 10 -> 10.0.10.0/24, VLAN 20 -> 10.0.20.0/24
   for i in 1 2 5; do
     ip -n "pc$i" addr flush dev "veth-pc$i"
@@ -53,7 +54,19 @@ if [[ "${1:-}" == "--router" ]]; then
     ip -n "pc$i" addr add "10.0.20.1$i/24" dev "veth-pc$i"
     ip -n "pc$i" route add default via 10.0.20.1
   done
+fi
 
+if [[ "${1:-}" == "--svi" ]]; then
+  # Multilayer switch: gateway'ler switch'in kendi üzerinde (SVI)
+  for vid in 10 20; do
+    bridge vlan add dev sw1 vid "$vid" self
+    ip link add link sw1 name "sw1.$vid" type vlan id "$vid"
+    ip addr add "10.0.$vid.1/24" dev "sw1.$vid"
+    ip link set "sw1.$vid" up
+  done
+  sysctl -qw net.ipv4.ip_forward=1
+  echo "Hazır (SVI). Test: sudo ip netns exec pc1 ping -c 2 10.0.20.16"
+elif [[ "${1:-}" == "--router" ]]; then
   # Router-on-a-stick
   ip netns add r1
   ip netns exec r1 sysctl -qw net.ipv6.conf.all.disable_ipv6=1 net.ipv6.conf.default.disable_ipv6=1

@@ -19,7 +19,7 @@ Amaç, CCNA çalışırken öğrendiğim kavramların (ARP, switching, VLAN, def
 | 4 | [TCP ve UDP](levels/04-tcp-udp/) | 3-way handshake, ACK, RST, port, UDP | ✅ |
 | 5 | [İnternete çıkış](levels/05-nat/) | Private IP, NAT, PAT (overload), NAT tablosu | ✅ |
 | 6 | [DHCP ve DNS](levels/06-dns-dhcp/) | DORA, lease, isim çözümleme, DNS forwarding | ✅ |
-| 7 | [VLAN ve router-on-a-stick](levels/07-vlan/) | VLAN, trunk, access port, native VLAN, inter-VLAN routing | ✅ |
+| 7 | [VLAN ve inter-VLAN routing](levels/07-vlan/) | VLAN, trunk, native VLAN, router-on-a-stick, SVI | ✅ |
 | 8 | Firewall ve port yönlendirme | ACL, static NAT | ⏳ |
 | 9 | Tüm topolojiyi script'e dökmek | Tekrarlanabilir altyapı | ⏳ |
 | 10 | Docker ile karşılaştırma | — | ⏳ |

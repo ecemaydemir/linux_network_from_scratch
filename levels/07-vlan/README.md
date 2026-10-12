@@ -5,6 +5,7 @@
 - **VLAN:** Tek bir switch'i, birbirini göremeyen birkaç sanal switch'e böler.
 - **Trunk:** İki switch arasındaki tek kablodan birden fazla VLAN'ı taşır; her paketin üstüne "hangi VLAN'a ait" etiketi yapıştırır.
 - **Router-on-a-stick:** VLAN'ları birbirine bağlayan router; switch'e tek bir kabloyla bağlı.
+- **SVI (multilayer switch):** Routing'i ayrı bir router yerine switch'in kendisi yapıyor.
 
 > **Benzetme:** Bir ofis binası. VLAN'lar araya örülmüş **görünmez duvarlar**, trunk iki kat arasında etiketli kolileri taşıyan **kargo arabası**, router da iki odaya da kapısı açılan **sekreter**.
 
@@ -13,6 +14,7 @@
 ```bash
 sudo ./setup.sh           # iki switch, 6 bilgisayar, VLAN 10/20, trunk
 sudo ./setup.sh --router  # ayrıca router-on-a-stick
+sudo ./setup.sh --svi     # router yerine switch'in kendisi routing yapar (SVI)
 ```
 
 ---
@@ -132,6 +134,60 @@ $ sudo ip netns exec pc1 ping -c 2 10.0.20.16
 
 ---
 
+## 4. SVI: routing'i switch'in kendisi yapıyor
+
+Router-on-a-stick'te VLAN'lar arası trafiğin tamamı router'a giden **tek kablodan** gidip geliyor; trafik artınca o kablo tıkanabiliyor.
+
+> **Benzetme:** İki mahalle arasında duvar var. Router-on-a-stick'te karşıya geçmek için herkes şehir dışındaki köprüye giden **tek şeritli yolu** kullanıyor; araba çoğalınca trafik sıkışıyor. SVI'da duvarın ortasına **bir kapı** açılıyor; kimse şehir dışına çıkmıyor.
+
+Router'ı (r1) sildim ve aynı gateway adreslerini switch'in kendisine verdim:
+
+```bash
+sudo ip netns del r1
+sudo bridge vlan add dev sw1 vid 10 self               # switch'in kendisi VLAN 10'u duysun
+sudo ip link add link sw1 name sw1.10 type vlan id 10  # interface vlan 10
+sudo ip addr add 10.0.10.1/24 dev sw1.10
+# (VLAN 20 için aynısı)
+sudo sysctl -qw net.ipv4.ip_forward=1                  # ip routing
+```
+
+| Router-on-a-stick (r1) | SVI (sw1) | Kampüs projesi (DIST1) |
+|---|---|---|
+| `r1-eth0.10` → 10.0.10.1 | `sw1.10` → 10.0.10.1 | `interface vlan 10` → 192.168.10.1 |
+| `ip_forward=1` (r1'de) | `ip_forward=1` (switch'te) | `ip routing` |
+
+Aynı üç adım; tek fark gateway'in nerede olduğu.
+
+### İlk denemede çalışmadı: eski MAC
+
+```
+$ sudo ip netns exec pc1 ping -c 2 10.0.20.16
+2 packets transmitted, 0 received, 100% packet loss
+
+$ sudo ip -n pc1 neigh
+10.0.10.1 dev veth-pc1 FAILED
+$ ip link show sw1.10 | grep ether
+    link/ether 52:8c:68:53:ae:87
+```
+
+pc1, 10.0.10.1'in MAC adresini router-on-a-stick zamanından (r1'in MAC'i) hatırlıyordu. Paketi artık var olmayan cihaza gönderdi, cevap alamayınca kaydı `FAILED` yaptı. Taşınan bir arkadaşın eski numarasını aramak gibi. ARP tablosunu temizleyince düzeldi:
+
+```
+$ sudo ip -n pc1 neigh flush all
+$ sudo ip -n pc6 neigh flush all
+$ sudo ip netns exec pc1 ping -c 2 10.0.20.16
+64 bytes from 10.0.20.16: icmp_seq=1 ttl=63 time=0.190 ms
+64 bytes from 10.0.20.16: icmp_seq=2 ttl=63 time=0.181 ms
+
+$ sudo ip -n pc1 neigh
+10.0.10.1 dev veth-pc1 lladdr 52:8c:68:53:ae:87 REACHABLE      ← yeni sahip: sw1
+```
+
+- **`ttl=63`:** Ayrı bir router olmadığı halde routing yapıldı; TTL'i switch azalttı.
+- Gerçek ağlarda bir router ya da sunucu değiştirildiğinde de aynı sorun yaşanıyor: cihazlar eski MAC'i bir süre hatırlıyor.
+
+---
+
 ## Kendini test et
 
 <details>
@@ -158,7 +214,14 @@ Bir bilgisayar paketi default gateway'e **sadece hedef kendi subnet'inde değils
 <details>
 <summary><b>4. Router'ın kablosunda bir ping paketi neden iki kez görünüyor?</b></summary>
 
-Router'ın tek kablosu var. Paket o kablodan `vlan 10` etiketiyle router'a çıkıyor, router onu `vlan 20` etiketiyle aynı kablodan geri indiriyor. Bu yöntemin zayıf yanı da bu: tüm VLAN'lar arası trafik aynı kablodan iki kez geçtiği için kablo darboğaz olabiliyor. [Kampüs projemde](https://github.com/ecemaydemir/campus_network_design) multilayer switch'te SVI kullanmanın sebebi bu; routing switch'in içinde, kabloya çıkmadan yapılıyor.
+Router'ın tek kablosu var. Paket o kablodan `vlan 10` etiketiyle router'a çıkıyor, router onu `vlan 20` etiketiyle aynı kablodan geri indiriyor. Bu yöntemin zayıf yanı da bu: tüm VLAN'lar arası trafik aynı kablodan iki kez geçtiği için kablo darboğaz olabiliyor. [Kampüs projemde](https://github.com/ecemaydemir/campus_network_design) multilayer switch'te SVI kullanmanın sebebi bu; routing switch'in içinde, kabloya çıkmadan yapılıyor (Bölüm 4).
+
+</details>
+
+<details>
+<summary><b>5. Router'ı SVI ile değiştirdikten sonra ping neden önce çalışmadı?</b></summary>
+
+pc1, gateway'in (10.0.10.1) MAC adresini ARP tablosunda saklıyordu ve bu hâlâ eski router'ın MAC'iydi. Paketleri artık var olmayan bir cihaza gönderdi. ARP tablosu temizlenince pc1 "10.0.10.1 kimde?" diye yeniden sordu ve yeni sahibi (sw1) öğrendi.
 
 </details>
 
