@@ -1,52 +1,143 @@
 # Seviye 6: DHCP ve DNS
 
-> **Benzetme:** r1 bir otel.
-> **Resepsiyon (DHCP)** oda numarası verir, **danışma masası (DNS)** isimleri adrese çevirir, **çıkış kapısı (gateway)** dışarıya açılır.
-> Üçü de aynı binada: `10.0.10.1`. Hangisine gittiğini kapı numarası (port) belirler: DHCP 67, DNS 53.
+## Tek cümleyle
+
+- **DHCP:** Ağa bağlanan cihaza adresini **otomatik** verir.
+- **DNS:** İsmi (google.com) numaraya (IP adresi) **çevirir**.
+
+Bu lab'da ikisini de router (r1) yapıyor, tıpkı evdeki modem gibi.
 
 ## Kurulum
 
 ```bash
 sudo apt install -y dnsmasq-base busybox
-sudo ./setup.sh          # r1'de dnsmasq çalışır, pc1'in IP'si yok
+sudo ./setup.sh          # r1'de DHCP + DNS sunucusu çalışır, pc1'in IP'si yok
 sudo ./setup.sh --fixed  # pc1 adresini DHCP ile de alır
 ```
 
-`dnsmasq` r1'de DHCP + DNS sunucusu, `busybox udhcpc` pc1'de DHCP istemcisi.
+---
+
+## 1. DHCP: adresi otomatik almak
+
+Seviye 3'te pc1'in adresini ve gateway'ini **elle** yazmıştım:
+
+```bash
+ip addr add 10.0.10.10/24 dev veth-pc1
+ip route add default via 10.0.10.1
+```
+
+Bu seviyede hiçbir şey yazmadım; pc1 bunları r1'den **kendisi istedi**.
+
+**Otel benzetmesi:** Oda numaran olmadan otele giriyorsun.
+
+| Adım | Otelde | Bu lab'da |
+|---|---|---|
+| Discover | "Resepsiyon nerede? Oda lazım!" (herkese bağırıyorsun) | pc1 → herkese |
+| Offer | "146 boş, ister misin?" | r1 → pc1 |
+| Request | "146'yı alıyorum!" | pc1 → herkese |
+| Ack | "Tamam, 1 saatliğine senin." | r1 → pc1 |
+
+**Sonuç:**
+
+```
+$ sudo ip netns exec pc1 busybox udhcpc -i veth-pc1 -f -q -s ./udhcpc.sh
+udhcpc: lease of 10.0.10.146 obtained from 10.0.10.1, lease time 3600
+
+$ sudo ip -n pc1 addr   →  inet 10.0.10.146/24     ← adres: kendiliğinden geldi
+$ sudo ip -n pc1 route  →  default via 10.0.10.1   ← gateway: kendiliğinden geldi
+```
 
 ---
 
-## 1. DHCP: odanı resepsiyondan al
+## 2. DNS: ismi numaraya çevirmek
 
-Seviye 3'te pc1'in IP'sini ve gateway'ini **elle** yazmıştım. DHCP bunları otomatik dağıtıyor.
+Tarayıcına `google.com` yazdığında bilgisayar Google'a doğrudan gidemez, çünkü internette her şey **numarayla** bulunur. Önce birine sorar: *"google.com'un numarası ne?"* Cevap gelir: *"192.178.24.174"*. Sonra o numaraya gider.
 
-| Adım | Paket | Otelde |
-|---|---|---|
-| **D**iscover | pc1 → herkese | "Resepsiyon nerede? Oda lazım!" |
-| **O**ffer | r1 → pc1 | "146 boş, ister misin?" |
-| **R**equest | pc1 → herkese | "146'yı alıyorum!" |
-| **A**ck | r1 → pc1 | "Tamam, 1 saatliğine senin." |
+Bu lab'da:
+- **Soran:** pc1
+- **Cevaplayan:** r1 (danışma masası)
+- **r1 bilmiyorsa:** 8.8.8.8'e sorar
 
-```bash
-sudo ip -n pc1 addr flush dev veth-pc1      # pc1'in ayarlarını sil
-sudo ip netns exec pc1 busybox udhcpc -i veth-pc1 -f -q -s ./udhcpc.sh
+> **8.8.8.8 nedir?** Google'ın internetteki DNS sunucusu: tek işi "şu ismin numarası ne?" sorularını cevaplamak olan bir bilgisayar. Herkes ücretsiz kullanabilir. Bu projede iki amaçla geçiyor:
+> 1. **Ping hedefi:** `ping 8.8.8.8` = "internete çıkabiliyor muyum?" testi. Burada sadece her zaman açık olan bir adres.
+> 2. **DNS sunucusu:** r1, bilmediği isimleri ona soruyor.
+
+pc1, danışma masasının adresini (10.0.10.1) **DHCP'den** öğrendi. Resepsiyon, oda anahtarıyla birlikte "danışma şurada" notunu da verdi.
+
+**Sonuç:**
+
+```
+$ sudo ip netns exec pc1 ping -4 -c 2 pc2.lab
+PING pc2.lab (10.0.20.10) ...                    ← "pc2.lab" ismi 10.0.20.10'a çevrildi
+
+$ sudo ip netns exec pc1 ping -4 -c 2 google.com
+PING google.com (192.178.24.174) ...             ← "google.com" ismi 192.178.24.174'e çevrildi
 ```
 
-**Sonuç:** hiçbir şey yazmadan pc1 her şeyi aldı.
+---
 
-```
-udhcpc: lease of 10.0.10.146 obtained from 10.0.10.1, lease time 3600
-$ ip -n pc1 addr   →  inet 10.0.10.146/24
-$ ip -n pc1 route  →  default via 10.0.10.1
-```
+## 3. Deney: danışma masasını kapatmak
 
-**Gözlemler**
-- **`0.0.0.0 → 255.255.255.255`:** Request paketinde pc1'in henüz adresi yok ("odasız misafir") ve resepsiyonun yerini bilmiyor ("herkese bağır").
-- **İki Discover:** İlk Discover'a 3 saniyede cevap gelmeyince pc1 tekrar sordu. DHCP UDP kullandığı için tekrar denemek istemcinin işi ([Seviye 4](../04-tcp-udp/)).
-- **Kira:** Adres 1 saatliğine verildi. Yarı sürede (30 dk) uzatma istenir; otelde "bir gece daha kalabilir miyim?" demek gibi.
+r1'deki DNS sunucusunu (dnsmasq) durdurdum:
+
+| Komut | Sonuç |
+|---|---|
+| `ping 8.8.8.8` | ✅ Çalıştı |
+| `ping google.com` | ❌ `Temporary failure in name resolution` |
+
+**Teşhis kuralı:** Önce IP adresiyle, sonra isimle dene. Biri çalışıp diğeri çalışmıyorsa sorun DNS'te. DevOps'ta bunun için bir şaka var: *"It's always DNS."*
+
+---
+
+## Kendini test et
+
+Cevabı görmek için soruya tıkla.
 
 <details>
-<summary>Ayrıntılı çıktılar (tcpdump, dnsmasq log'u, kira defteri)</summary>
+<summary><b>1. DNS kapalıyken neden <code>ping 8.8.8.8</code> çalıştı ama <code>ping google.com</code> çalışmadı?</b></summary>
+
+`8.8.8.8` zaten bir numara; çevirmeye gerek yok, pc1 doğrudan gidiyor.
+`google.com` ise bir isim; önce numarasının sorulması lazım. Soracağı yer (r1'deki DNS) kapalı olduğu için çevrilemedi.
+
+İnternet bağlantısı sağlamdı; bozuk olan sadece **çeviri**ydi.
+
+</details>
+
+<details>
+<summary><b>2. r1, <code>pc2.lab</code> sorulduğunda internete çıkmadı ama <code>google.com</code> sorulduğunda 8.8.8.8'e gitti. Neden?</b></summary>
+
+dnsmasq'ı başlatırken r1'in kendi listesine bir kayıt eklemiştim: `--host-record=pc2.lab,10.0.20.10`.
+- **pc2.lab:** r1 cevabı kendi listesinde buldu ve hemen verdi (1.6 ms).
+- **google.com:** r1'in listesinde yoktu, 8.8.8.8'e sordu ve cevabı pc1'e iletti (59 ms).
+
+Danışman bildiğini kendisi söylüyor, bilmediği için merkezi arıyor.
+
+</details>
+
+<details>
+<summary><b>3. pc1, DNS sunucusunun adresini nereden öğrendi?</b></summary>
+
+DHCP'den. r1, pc1'e adres verirken `dns=10.0.10.1` bilgisini de gönderdi. DHCP ile DNS bu yüzden birlikte anlatılıyor.
+
+</details>
+
+<details>
+<summary><b>4. Gateway ile DNS sunucusu neden aynı adres (10.0.10.1)?</b></summary>
+
+Çünkü aynı cihaz (r1) iki ayrı iş yapıyor:
+- **Gateway** = binanın çıkış kapısı. Paket r1'e uğrayıp başka yere gidiyor.
+- **DNS sunucusu** = binanın danışma masası. Soru doğrudan r1'e soruluyor.
+
+Hangisine gidildiğini port numarası belirliyor (DNS: 53, DHCP: 67). Evdeki modem de böyle: 192.168.1.1 hem gateway, hem DHCP, hem DNS.
+
+</details>
+
+---
+
+## Ayrıntılar
+
+<details>
+<summary>DHCP: paketler ve gözlemler</summary>
 
 ```
 # tcpdump (r1-eth1), kısaltılmış
@@ -74,54 +165,23 @@ $ cat /tmp/r1.leases
 1791800894 36:32:83:d0:68:dd 10.0.10.146 * 01:36:32:83:d0:68:dd
 ```
 
-- `xid`: konuşmanın numarası; otelde rezervasyon numarası gibi.
-- `RN` / `RB`: kiranın %50'sinde ve %87.5'inde yenileme denemeleri.
-- CCNA notu: broadcast router'dan geçmez. DHCP sunucusu başka subnet'teyse router'da `ip helper-address` gerekir. Burada sunucu aynı subnet'te.
+- **`0.0.0.0 → 255.255.255.255`:** pc1'in henüz adresi yok ve sunucunun yerini bilmiyor, o yüzden herkese bağırıyor.
+- **İki Discover:** İlkine 3 saniyede cevap gelmeyince pc1 tekrar sordu. DHCP UDP kullandığı için tekrar denemek istemcinin işi ([Seviye 4](../04-tcp-udp/)).
+- **Kira:** 1 saat. Yarısında (30 dk) uzatma isteniyor (`RN`).
+- **`xid`:** Konuşmanın numarası; otelde rezervasyon numarası gibi.
+- **CCNA notu:** Broadcast router'dan geçmez. DHCP sunucusu başka subnet'teyse router'da `ip helper-address` gerekir.
 
 </details>
 
----
-
-## 2. DNS: rehberden numarayı bul
-
-> **Benzetme:** Telefon rehberi. "google.com" ismini "192.178.24.174" numarasına çevirir.
-
-| Bu lab | Otelde |
-|---|---|
-| pc1 | Soru soran misafir |
-| r1 (dnsmasq, port 53) | Danışma masası |
-| `--host-record=pc2.lab,10.0.20.10` | Danışmanın kendi listesi |
-| 8.8.8.8 | Danışmanın bilmediğinde aradığı merkez |
-
-pc1 danışmanın yerini **DHCP'den** öğrendi (`dns=10.0.10.1`).
-
-```
-$ ping -4 pc2.lab     →  PING pc2.lab (10.0.20.10) ... ttl=63 time=0.173 ms
-$ ping -4 google.com  →  PING google.com (192.178.24.174) ... ttl=108 time=46.3 ms
-```
-
-**r1'de ne oldu?**
-
-| | pc2.lab | google.com |
-|---|---|---|
-| Kim bildi? | Danışman (kendi listesi) | Merkez (8.8.8.8) |
-| r1 internete çıktı mı? | Hayır | Evet |
-| Cevap süresi | 1.6 ms | 59 ms |
-
-**Gözlemler**
-- **DNS forwarding:** google.com'u 8.8.8.8'e **pc1 değil, r1 sordu**. Google pc1'i hiç görmedi; tıpkı merkezin, danışmaya soru soran misafiri tanımaması gibi.
-- **Önbellek ve TTL:** Danışman cevapları not defterine yazıyor, ama her notun bir son kullanma süresi var. 6.5 dakika sonra google.com'un notu dolmuştu (yeniden soruldu), "bu IP kimin?" notu dolmamıştı (önbellekten 0.1 ms'de geldi).
-- **Sızıntı:** Rehberde pc2.lab'ın IPv6 kaydı yoktu, dnsmasq bunu da 8.8.8.8'e sordu ("böyle bir isim yok" cevabı geldi). İç dahili numarayı Bilinmeyen Numaralar'a sormak gibi; gerçek ağda `--local=/lab/` ile engellenir.
-
 <details>
-<summary>Ayrıntılı çıktılar ve DNS satırlarını okuma</summary>
+<summary>DNS: paketler, satırları okuma ve gözlemler</summary>
 
 ```
 # pc2.lab: cevap r1'in kendi listesinden (sadece r1-eth1)
 r1-eth1 In  IP 10.0.10.146.43734 > 10.0.10.1.53: 4000+ A? pc2.lab. (25)
 r1-eth1 Out IP 10.0.10.1.53 > 10.0.10.146.43734: 4000* 1/0/0 A 10.0.20.10 (41)
 
-# google.com: r1 merkeze soruyor (r1-wan)
+# google.com: r1 8.8.8.8'e soruyor (r1-wan)
 r1-eth1 In  IP 10.0.10.146.49741 > 10.0.10.1.53: 13158+ A? google.com. (28)
 r1-wan Out IP 192.168.100.2.51258 > 8.8.8.8.53: 40649+ [1au] A? google.com. (39)
 r1-wan In  IP 8.8.8.8.53 > 192.168.100.2.51258: 40649 1/0/1 A 192.178.24.174 (55)
@@ -137,35 +197,21 @@ reply google.com is 192.178.24.174
 
 | Parça | Anlamı |
 |---|---|
-| `4000` | Sorunun numarası (bankadaki sıra numarası gibi); cevap aynı numarayla gelir |
+| `4000` | Sorunun numarası; cevap aynı numarayla gelir |
 | `A?` / `AAAA?` / `PTR?` | IPv4 adresi ne? / IPv6 adresi ne? / Bu IP kimin? |
 | `*` | "Bu bilgi benim kendi kaydım" |
 | `1/0/0` | İlk sayı: kaç cevap var |
 | `NXDomain` | "Böyle bir isim yok" |
 
-Tek bir `ping` üç soru sordurdu: `A?`, `AAAA?` ve ekranda ismi yazabilmek için `PTR?`. PTR'de adres tersten yazılıyor: `10.0.20.10` → `10.20.0.10.in-addr.arpa`.
+- **DNS forwarding:** google.com'u 8.8.8.8'e pc1 değil r1 sordu (kaynak `192.168.100.2`). Google pc1'i hiç görmedi.
+- **Önbellek ve TTL:** r1 cevapları hatırlıyor ama her cevabın bir son kullanma süresi var. 6.5 dakika sonra google.com'un kaydının süresi dolmuştu (yeniden soruldu); "bu IP kimin?" (PTR) kaydı hâlâ geçerliydi (0.1 ms'de önbellekten geldi).
+- **Sızıntı:** pc2.lab'ın IPv6 kaydı olmadığı için dnsmasq bunu 8.8.8.8'e sordu, `NXDomain` cevabı geldi. Gerçek ağda `--local=/lab/` ile iç isimlerin dışarıya sorulması engellenir.
+- **Tek ping, üç soru:** `A?`, `AAAA?` ve ekranda ismi yazmak için `PTR?`. PTR'de adres tersten yazılıyor: `10.20.0.10.in-addr.arpa`.
 
 </details>
 
----
-
-## 3. "It's always DNS"
-
-dnsmasq'ı durdurdum (pc1'in adresi kaybolmadı, kira 1 saatlik):
-
-| Komut | Sonuç |
-|---|---|
-| `ping 8.8.8.8` | ✅ Çalıştı |
-| `ping google.com` | ❌ `Temporary failure in name resolution` |
-
-> **Benzetme:** Telefon hattın çalışıyor ama rehberin kayboldu. Numarasını ezbere bildiğini arayabilirsin, "Annem"i arayamazsın.
-
-**Teşhis:** Önce IP ile dene, sonra isimle. Biri çalışıp diğeri çalışmıyorsa sorun DNS'te.
-
-r1, 53. portta kimse dinlemediği için her soruya `ICMP udp port 53 unreachable` ("danışma kapalı" tabelası) ile cevap verdi; [Seviye 4'teki kapalı port](../04-tcp-udp/README.md#deney-3-kapalı-bir-porta-bağlanmak) deneyinin aynısı. pc1 bu tabelayı görünce 1 ms içinde vazgeçti.
-
 <details>
-<summary>Ayrıntılı çıktı</summary>
+<summary>"It's always DNS": paketler</summary>
 
 ```
 r1-eth1 In  IP 10.0.10.146.43078 > 10.0.10.1.53: 32952+ A? google.com. (28)
@@ -175,25 +221,17 @@ r1-eth1 Out IP 10.0.10.1 > 10.0.10.146: ICMP 10.0.10.1 udp port 53 unreachable, 
 (pc1 bir kez daha denedi, aynı cevap)
 ```
 
+53. portu dinleyen kimse kalmadığı için r1'in işletim sistemi "port unreachable" ile cevap verdi; [Seviye 4'teki kapalı port](../04-tcp-udp/README.md#deney-3-kapalı-bir-porta-bağlanmak) deneyinin aynısı. pc1 1 ms içinde vazgeçti.
+
 </details>
 
 ---
 
-## Büyük resim: `ping google.com`
-
-| Adım | Ne oldu | Seviye |
-|---|---|---|
-| 1 | pc1 adresini, gateway'i ve DNS sunucusunu DHCP ile aldı | 6 |
-| 2 | "google.com kim?" diye r1'e sordu, r1 de 8.8.8.8'e | 6 |
-| 3 | Paketi gateway'e (r1) verdi, önce ARP ile MAC'ini öğrendi | 3, 1 |
-| 4 | r1 kaynak adresi NAT ile değiştirip internete çıkardı | 5 |
-
 ## Docker'da karşılığı
 
-- **Docker DHCP kullanmıyor.** Odaları misafir gelmeden kendisi atayan bir otel gibi: IP'yi container oluşturulurken kendisi veriyor (IPAM).
-- **Docker'ın kendi danışma masası var:** `docker network create` ile kurulan ağlarda container'lar `127.0.0.11`'e soruyor. Container isimlerini kendisi çözüyor (`ping db`), bilmediğini host'un DNS'ine soruyor. Buradaki dnsmasq'ın aynısı.
-- Container içinde `Temporary failure in name resolution` çok yaygın; teşhis yukarıdakiyle aynı.
-- Kubernetes'te bu rolü **CoreDNS** üstleniyor.
+- **Docker DHCP kullanmıyor:** Container oluşturulurken IP adresini kendisi seçip veriyor.
+- **Docker'ın kendi DNS sunucusu var:** `docker network create` ile kurulan ağlarda container'lar `127.0.0.11`'e soruyor. Container isimlerini kendisi çeviriyor (`ping db` gibi), bilmediğini dışarıya soruyor. Buradaki r1'in yaptığının aynısı.
+- Container içinde `Temporary failure in name resolution` hatası çok yaygın. Teşhis yukarıdakiyle aynı: IP ile dene, sonra isimle.
 
 ## Temizlik
 
