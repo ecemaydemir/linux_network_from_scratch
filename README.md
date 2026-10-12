@@ -7,7 +7,7 @@ Amaç, CCNA çalışırken öğrendiğim kavramların (ARP, switching, VLAN, def
 ## Ortam
 
 - macOS üzerinde OrbStack ile Ubuntu (arm64) sanal makinesi
-- Araçlar: `iproute2`, `tcpdump`, `netcat`, `iptables`, `conntrack`
+- Araçlar: `iproute2`, `tcpdump`, `netcat`, `iptables`, `conntrack`, `dnsmasq`, `busybox udhcpc`
 
 ## Seviyeler
 
@@ -18,7 +18,7 @@ Amaç, CCNA çalışırken öğrendiğim kavramların (ARP, switching, VLAN, def
 | 3 | [İki subnet ve router namespace](levels/03-router/) | Routing tablosu, default gateway, `ip routing`, TTL | ✅ |
 | 4 | [TCP ve UDP](levels/04-tcp-udp/) | 3-way handshake, ACK, RST, port, UDP | ✅ |
 | 5 | [İnternete çıkış](levels/05-nat/) | Private IP, NAT, PAT (overload), NAT tablosu | ✅ |
-| 6 | DNS ve DHCP | DORA, lease, isim çözümleme | ⏳ |
+| 6 | [DHCP ve DNS](levels/06-dns-dhcp/) | DORA, lease, isim çözümleme, DNS forwarding | ✅ |
 | 7 | Firewall ve port yönlendirme | ACL, static NAT | ⏳ |
 | 8 | Tüm topolojiyi script'e dökmek | Tekrarlanabilir altyapı | ⏳ |
 | 9 | Docker ile karşılaştırma | — | ⏳ |
@@ -37,7 +37,7 @@ Bir Docker container'ı, ağ açısından bakıldığında bu projede kurduğum 
 | 3 | Router, `ip_forward`, default gateway | Host, container'ların gateway'i (`172.17.0.1`) |
 | 4 | TCP/UDP portları | `-p 8080:80` (TCP), `-p 53:53/udp` |
 | 5 | `MASQUERADE` | Container'ların internete çıkışı |
-| 6 | DNS | Container'ların birbirini isimle bulması |
+| 6 | DHCP, DNS | IP atama (IPAM), yerleşik DNS (`127.0.0.11`) |
 | 7 | iptables, DNAT | Port yayınlama, ağ izolasyonu |
 
 ## Çalıştırma
