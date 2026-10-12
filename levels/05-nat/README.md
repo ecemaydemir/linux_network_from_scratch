@@ -171,7 +171,7 @@ Container'ların internete çıkması bu seviyenin aynısı. Docker, host'a şu 
 
 "Container ağından (172.17.0.0/16) gelip `docker0` dışına çıkan her paketi host'un adresiyle maskele." Yani bu seviyede r1'de yazdığım kuralın neredeyse aynısı. Docker kurulu bir makinede `sudo iptables -t nat -S POSTROUTING` ile görülebiliyor, container bağlantılarının NAT kayıtları da `conntrack -L` ile.
 
-`docker run -p 8080:80` ile port yayınlamak da bir NAT türü (hedef adresi değiştiren DNAT). Seviye 7'de port yönlendirmeyi kurarken bunu göreceğim.
+`docker run -p 8080:80` ile port yayınlamak da bir NAT türü (hedef adresi değiştiren DNAT). Seviye 8'de port yönlendirmeyi kurarken bunu göreceğim.
 
 ## Temizlik
 

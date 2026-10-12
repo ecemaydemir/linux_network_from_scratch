@@ -19,10 +19,10 @@ Amaç, CCNA çalışırken öğrendiğim kavramların (ARP, switching, VLAN, def
 | 4 | [TCP ve UDP](levels/04-tcp-udp/) | 3-way handshake, ACK, RST, port, UDP | ✅ |
 | 5 | [İnternete çıkış](levels/05-nat/) | Private IP, NAT, PAT (overload), NAT tablosu | ✅ |
 | 6 | [DHCP ve DNS](levels/06-dns-dhcp/) | DORA, lease, isim çözümleme, DNS forwarding | ✅ |
-| 7 | Firewall ve port yönlendirme | ACL, static NAT | ⏳ |
-| 8 | Tüm topolojiyi script'e dökmek | Tekrarlanabilir altyapı | ⏳ |
-| 9 | Docker ile karşılaştırma | — | ⏳ |
-| + | VLAN (802.1Q) | VLAN, trunk, access port | ⏳ |
+| 7 | VLAN (802.1Q) | VLAN, trunk, access port, native VLAN | ⏳ |
+| 8 | Firewall ve port yönlendirme | ACL, static NAT | ⏳ |
+| 9 | Tüm topolojiyi script'e dökmek | Tekrarlanabilir altyapı | ⏳ |
+| 10 | Docker ile karşılaştırma | — | ⏳ |
 
 Her seviyenin klasöründe kurulum (`setup.sh`) ve temizlik (`teardown.sh`) script'leri, topoloji, gözlem notları ve o seviyenin **Docker'daki karşılığı** bulunuyor.
 
@@ -38,7 +38,8 @@ Bir Docker container'ı, ağ açısından bakıldığında bu projede kurduğum 
 | 4 | TCP/UDP portları | `-p 8080:80` (TCP), `-p 53:53/udp` |
 | 5 | `MASQUERADE` | Container'ların internete çıkışı |
 | 6 | DHCP, DNS | IP atama (IPAM), yerleşik DNS (`127.0.0.11`) |
-| 7 | iptables, DNAT | Port yayınlama, ağ izolasyonu |
+| 7 | VLAN | Her Docker ağı ayrı bir L2 alanı; `macvlan` ile gerçek VLAN'a bağlanma |
+| 8 | iptables, DNAT | Port yayınlama, ağ izolasyonu |
 
 ## Çalıştırma
 

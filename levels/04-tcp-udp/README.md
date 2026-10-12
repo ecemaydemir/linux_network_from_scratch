@@ -149,7 +149,7 @@ pc2'de yakalanan:
 | `Connection timed out` | Hiç cevap gelmedi | Paketi sessizce atan bir firewall ya da yol yok |
 | `Network is unreachable` | Paket hiç çıkmadı | Routing ([Seviye 3, Adım 1](../03-router/README.md#adım-1-gateway-yok--paket-hiç-çıkmıyor)) |
 
-`Connection refused` aslında iyi bir işaret: ağ sağlam, sorun serviste. Seviye 7'de firewall kurarken bu farkı bilerek oluşturacağım (paketi sessizce atan DROP ile reddeden REJECT).
+`Connection refused` aslında iyi bir işaret: ağ sağlam, sorun serviste. Seviye 8'de firewall kurarken bu farkı bilerek oluşturacağım (paketi sessizce atan DROP ile reddeden REJECT).
 
 ## Docker'da karşılığı
 

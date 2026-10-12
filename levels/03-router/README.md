@@ -164,7 +164,7 @@ Gidiş yolunun çalışması yeterli değil. Ağdaki her cihaz cevabı nereye g�
 
 - `docker0` bridge'inin kendisinin de bir IP adresi var (varsayılan `172.17.0.1`) ve container'ların **default gateway'i** o. Container içinde `ip route` çalıştırınca `default via 172.17.0.1` görülüyor. Yani container'lar için router rolünü host'un kendisi üstleniyor (bu seviyedeki r1).
 - Docker kurulurken host'ta `net.ipv4.ip_forward=1` ayarını açıyor. Bu, Adım 2'de yaşadığım sorunun Docker'daki karşılığı: bu ayar kapanırsa container'lar host'un ötesine ulaşamaz.
-- Farklı Docker ağlarındaki (farklı bridge'lerdeki) container'lar arasında host teknik olarak routing yapabilecek durumda. Ama Docker iptables kurallarıyla bu trafiği **bilerek engelliyor**; ağlar birbirinden izole oluyor. Seviye 7'deki firewall konusu bunun nasıl yapıldığını gösterecek.
+- Farklı Docker ağlarındaki (farklı bridge'lerdeki) container'lar arasında host teknik olarak routing yapabilecek durumda. Ama Docker iptables kurallarıyla bu trafiği **bilerek engelliyor**; ağlar birbirinden izole oluyor. Seviye 8'deki firewall konusu bunun nasıl yapıldığını gösterecek.
 
 ## Temizlik
 
