@@ -1,4 +1,4 @@
-# Seviye 4: İnternete çıkış (NAT / PAT)
+# Seviye 5: İnternete çıkış (NAT / PAT)
 
 ## Topoloji
 
@@ -136,6 +136,8 @@ tcp  6 9 CLOSE src=10.0.10.10 dst=1.1.1.1 sport=50000 dport=80 src=1.1.1.1 dst=1
 | pc1 | 10.0.10.10 : 50000 | 192.168.100.2 : **50000** |
 | pc2 | 10.0.20.10 : 50000 | 192.168.100.2 : **29662** |
 
+(`CLOSE` ve `CLOSE_WAIT`, TCP bağlantısının kapanış aşamaları; bkz. [Seviye 4](../04-tcp-udp/). `ASSURED`, iki yönde de trafik görüldüğü anlamına geliyor.)
+
 İlk gelen pc1 portunu korudu. pc2 aynı portla geldiğinde router, çakışmayı önlemek için onun dış portunu **29662** yaptı. Cloudflare'in 29662'ye gönderdiği cevap, tablodan pc2'ye ait olduğu anlaşılarak içeri iletiliyor.
 
 **Router çakışma olmadıkça portu değiştirmiyor, çakışma olunca değiştiriyor.** Tek bir dış IP ile binlerce bağlantının aynı anda yönetilebilmesinin sebebi bu.
@@ -152,7 +154,7 @@ Seviye 3'te router her iki ağa da doğrudan bağlıydı, bilmediği bir yer yok
 | | TTL | Süre |
 |---|---|---|
 | Seviye 3 (aynı makinede, 1 router) | 63 | ~0.2 ms |
-| Seviye 4 (8.8.8.8) | 108 | ~48 ms |
+| Seviye 5 (8.8.8.8) | 108 | ~48 ms |
 
 TTL'in başlangıç değeri işletim sistemine göre değişiyor (Linux 64, Windows 128 vb.), bu yüzden 108'den kesin hop sayısı çıkarılamaz. Ama yolun artık onlarca router'dan oluştuğu açık.
 

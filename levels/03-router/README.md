@@ -151,7 +151,7 @@ Router'da bir ping'in tam turu (id 791):
 Seviye 1 ve 2'de `ttl=64` idi, burada `ttl=63`. Ping çıktısında görünen, **cevap** paketinin TTL'i: pc2 cevabı 64 ile gönderdi, router iletirken 1 azalttı. `traceroute` bu mekanizmayı kullanıyor: TTL'i 1, 2, 3... ile gönderip yoldaki her router'ın "TTL bitti" mesajını topluyor.
 
 ### 2. Router IP adreslerine dokunmuyor
-Paketin kaynağı router'ın her iki tarafında da 10.0.10.10, hedefi 10.0.20.10. Router yalnızca hangi karttan çıkacağına karar veriyor. Seviye 4'te NAT eklendiğinde bu değişecek.
+Paketin kaynağı router'ın her iki tarafında da 10.0.10.10, hedefi 10.0.20.10. Router yalnızca hangi karttan çıkacağına karar veriyor. Seviye 5'te NAT eklendiğinde bu değişecek.
 
 ### 3. Hata mesajı, sorunun nerede olduğunu söylüyor
 - `Network is unreachable`: sorun **göndericide**, paket hiç çıkmadı.

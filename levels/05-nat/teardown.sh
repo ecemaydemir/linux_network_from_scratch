@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Seviye 4 topolojisini siler: VM'deki NAT kuralı, WAN kablosu ve Seviye 3 namespace'leri.
+# Seviye 5 topolojisini siler: VM'deki NAT kuralı, WAN kablosu ve Seviye 3 namespace'leri.
 set -u
 DIR="$(cd "$(dirname "$0")" && pwd)"
 

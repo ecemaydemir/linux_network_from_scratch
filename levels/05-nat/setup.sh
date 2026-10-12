@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Seviye 4: Seviye 3'ün çalışır haline bir WAN bağlantısı ekler.
+# Seviye 5: Seviye 3'ün çalışır haline bir WAN bağlantısı ekler.
 # Varsayılan: r1'de NAT KAPALI (Adım 1). --fixed: r1'de NAT açık.
 set -euo pipefail
 DIR="$(cd "$(dirname "$0")" && pwd)"

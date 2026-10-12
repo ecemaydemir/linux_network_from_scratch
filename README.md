@@ -7,7 +7,7 @@ Amaç, CCNA çalışırken öğrendiğim kavramların (ARP, switching, VLAN, def
 ## Ortam
 
 - macOS üzerinde OrbStack ile Ubuntu (arm64) sanal makinesi
-- Araçlar: `iproute2`, `tcpdump`, `iptables`, `conntrack`
+- Araçlar: `iproute2`, `tcpdump`, `netcat`, `iptables`, `conntrack`
 
 ## Seviyeler
 
@@ -16,10 +16,11 @@ Amaç, CCNA çalışırken öğrendiğim kavramların (ARP, switching, VLAN, def
 | 1 | [İki namespace, bir veth kablosu](levels/01-veth-arp/) | Aynı subnet, ARP | ✅ |
 | 2 | [Linux bridge ile switch](levels/02-bridge-switch/) | MAC öğrenme, flooding, switching | ✅ |
 | 3 | [İki subnet ve router namespace](levels/03-router/) | Routing tablosu, default gateway, `ip routing`, TTL | ✅ |
-| 4 | [İnternete çıkış](levels/04-nat/) | Private IP, NAT, PAT (overload), NAT tablosu | ✅ |
-| 5 | Firewall ve port yönlendirme | ACL, static NAT | ⏳ |
-| 6 | Tüm topolojiyi script'e dökmek | Tekrarlanabilir altyapı | ⏳ |
-| 7 | Docker ile karşılaştırma | — | ⏳ |
+| 4 | [TCP ve UDP](levels/04-tcp-udp/) | 3-way handshake, ACK, RST, port, UDP | ✅ |
+| 5 | [İnternete çıkış](levels/05-nat/) | Private IP, NAT, PAT (overload), NAT tablosu | ✅ |
+| 6 | Firewall ve port yönlendirme | ACL, static NAT | ⏳ |
+| 7 | Tüm topolojiyi script'e dökmek | Tekrarlanabilir altyapı | ⏳ |
+| 8 | Docker ile karşılaştırma | — | ⏳ |
 
 Her seviyenin klasöründe kurulum (`setup.sh`) ve temizlik (`teardown.sh`) script'leri, topoloji ve gözlem notları bulunuyor.
 
