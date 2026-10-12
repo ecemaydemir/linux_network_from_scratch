@@ -161,6 +161,18 @@ TTL'in başlangıç değeri işletim sistemine göre değişiyor (Linux 64, Wind
 ### 4. ICMP'de port yok, ID var
 `conntrack` ICMP bağlantılarını `id` alanıyla ayırt ediyor. PAT'ta port numarasının oynadığı rolü ICMP'de bu alan üstleniyor.
 
+## Docker'da karşılığı
+
+Container'ların internete çıkması bu seviyenin aynısı. Docker, host'a şu kuralı ekliyor:
+
+```
+-A POSTROUTING -s 172.17.0.0/16 ! -o docker0 -j MASQUERADE
+```
+
+"Container ağından (172.17.0.0/16) gelip `docker0` dışına çıkan her paketi host'un adresiyle maskele." Yani bu seviyede r1'de yazdığım kuralın neredeyse aynısı. Docker kurulu bir makinede `sudo iptables -t nat -S POSTROUTING` ile görülebiliyor, container bağlantılarının NAT kayıtları da `conntrack -L` ile.
+
+`docker run -p 8080:80` ile port yayınlamak da bir NAT türü (hedef adresi değiştiren DNAT). Seviye 7'de port yönlendirmeyi kurarken bunu göreceğim.
+
 ## Temizlik
 
 ```bash

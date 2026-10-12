@@ -149,7 +149,13 @@ pc2'de yakalanan:
 | `Connection timed out` | Hiç cevap gelmedi | Paketi sessizce atan bir firewall ya da yol yok |
 | `Network is unreachable` | Paket hiç çıkmadı | Routing ([Seviye 3, Adım 1](../03-router/README.md#adım-1-gateway-yok--paket-hiç-çıkmıyor)) |
 
-`Connection refused` aslında iyi bir işaret: ağ sağlam, sorun serviste. Seviye 6'da firewall kurarken bu farkı bilerek oluşturacağım (paketi sessizce atan DROP ile reddeden REJECT).
+`Connection refused` aslında iyi bir işaret: ağ sağlam, sorun serviste. Seviye 7'de firewall kurarken bu farkı bilerek oluşturacağım (paketi sessizce atan DROP ile reddeden REJECT).
+
+## Docker'da karşılığı
+
+- `docker run -p 8080:80` varsayılan olarak yalnızca **TCP** portunu yayınlıyor. UDP kullanan bir servis için protokolü açıkça yazmak gerekiyor: `-p 5353:53/udp`. Bunu unutmak, Deney 3'teki gibi sessizce başarısız olan bir UDP servisine yol açabiliyor.
+- Docker'daki klasik bir hata: container içindeki uygulama `127.0.0.1`'i dinliyorsa, port yayınlanmış olsa bile dışarıdan gelen bağlantılar uygulamaya ulaşamıyor. Uygulamanın `0.0.0.0`'ı (tüm arayüzleri) dinlemesi gerekiyor. Container içinde `ss -tln` ile hangi adresin dinlendiği kontrol edilebiliyor.
+- Yukarıdaki hata mesajı tablosu container'lar için de aynen geçerli: `Connection refused` genelde container'ın içindeki servisin çalışmadığını ya da yanlış portu dinlediğini gösteriyor.
 
 ## Temizlik
 

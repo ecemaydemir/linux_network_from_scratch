@@ -125,6 +125,19 @@ Komutları toplu yapıştırınca bu sefer tersi oldu: ping, tcpdump dinlemeye h
 
 **Çözüm:** İki ayrı terminal. Birinde süre sınırı olmadan dinle, diğerinde trafiği üret, işin bitince dinleyiciyi Ctrl+C ile durdur.
 
+## Docker'da karşılığı
+
+Docker'ın varsayılan ağı tam olarak bu seviyedeki yapı:
+
+| Bu seviye | Docker |
+|---|---|
+| `br0` | `docker0` bridge'i |
+| `br-pc1`, `br-pc2`... (switch portları) | Host'taki `vethXXXXXXX` uçları, `docker0`'a takılı |
+| `bridge fdb show br br0` | `bridge fdb show br docker0`: Docker'ın switch'inin MAC tablosu |
+
+- `docker network create` ile oluşturulan her ağ, `br-<ağ id>` adında ayrı bir Linux bridge. Yani her Docker ağı ayrı bir switch.
+- Aynı ağdaki container'lar arasındaki trafik bu seviyedeki kurallarla iletiliyor: broadcast'ler herkese, tanınan MAC'lere giden frame'ler sadece ilgili porta.
+
 ## Temizlik
 
 ```bash

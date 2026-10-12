@@ -92,6 +92,19 @@ sudo ip -n pc1 addr add 10.0.0.1/24 dev veth-pc1
 
 Cisco IOS'ta ise `ip address` komutu eski adresi değiştiriyor (secondary eklemek için ayrıca `secondary` anahtar kelimesi gerekiyor).
 
+## Docker'da karşılığı
+
+Her Docker container'ı aslında ayrı bir **network namespace**. `docker run` bir container başlattığında, bu seviyede elle yaptığımın aynısını yapıyor: bir veth çifti oluşturuyor, bir ucunu container'ın namespace'ine taşıyıp adını `eth0` yapıyor, IP veriyor ve arayüzü açıyor.
+
+| Bu seviye | Docker |
+|---|---|
+| `ip netns add pc1` | Her container için yeni bir network namespace |
+| `veth-pc1` (namespace içindeki uç) | Container içindeki `eth0` |
+| veth'in diğer ucu | Host'ta görünen `vethXXXXXXX` arayüzleri |
+| `ip -n pc1 neigh` | Container içinde `ip neigh`: aynı ARP tablosu |
+
+İki container birbirine ilk kez ping attığında da önce burada gördüğüm ARP request/reply gidip geliyor.
+
 ## Temizlik
 
 ```bash
